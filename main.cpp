@@ -5,6 +5,7 @@
 #include "DataTypes.h"
 #include "jsonHandler.h"
 
+
 using json = nlohmann::json;
 
 int main() {
@@ -27,16 +28,19 @@ int main() {
     std::ifstream iFile("/Users/mleykhner/Documents/Курсовая 3 сем/MovieLibrary/resources/input.json");
     std::string query;
     while(!iFile.eof()){
-        char * newLine = new char;
+        auto * newLine = new char;
         iFile.getline(newLine, 1024);
         query += newLine;
     }
     std::cout << query << std::endl;
-    directors = parseJSON(query);
+    //directors = parseJSON(query);
+    directors = deserializeJSON(query);
+
+    //directors->operator[](1)->getMovies().operator[](0)->addActor(new Human("Антошка", "Шагин", 124236));
 
     std::ofstream oFile("/Users/mleykhner/Documents/Курсовая 3 сем/MovieLibrary/resources/output.json");
     oFile.clear();
-    oFile << serializeJSON(*directors).dump(4);
+    oFile << serializeJSON(directors).dump(4);
 
     return 0;
 }

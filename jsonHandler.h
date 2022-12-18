@@ -7,41 +7,107 @@ using json = nlohmann::json;
 #include "List.h"
 #include "DataTypes.h"
 
-List<Human> * parseJSON(const std::string& query){
+//Десериализация JSON-строки
+List<Human> * deserializeJSON(const std::string& query){
+    //Расшифровываем строку как JSON-объект
     json newObject = json::parse(query);
-    auto * result = new List<Human>;
-    for (auto& director : newObject)
-    {
-        auto * newDirector = new Human(director["name"], director["surname"]);
-        newDirector->setBio(director["bio"].is_null() ? "" : director["bio"]);
-        for(auto& movie : director["movies"]){
-            auto * newMovie = new Movie(movie["title"], (int)movie["year"]);
-            newMovie->setSynopsis(movie["synopsis"].is_null() ? "" : movie["synopsis"]);
-            newMovie->setBudget(movie["budgetUSD"].is_null() ? 0 : (int)movie["budgetUSD"]);
-            newMovie->setBoxOffice(movie["boxOfficeUSD"].is_null() ? 0 : (int)movie["boxOfficeUSD"]);
-            newMovie->setCountries(movie["countries"].is_null() ? "" : movie["countries"]);
-            newMovie->setRate(movie["rate"].is_null() ? 0 : (float)movie["rate"]);
-            newDirector->addMovie(newMovie);
-        }
-        result->add(newDirector);
+    //Создаем переменную для возвращения
+    auto result = new List<Human>;
+    //Создаем списки людей и фильмов
+    json moviesList = newObject["movies"];
+    json peopleList = newObject["people"];
+    //Для каждого человека из списка...
+    for(auto person : peopleList){
+        //Создаём новый экземпляр класса Human
+        auto newPerson = new Human(person["name"], person["surname"], (int)person["id"]);
+        newPerson->setBio(person["bio"].is_null() ? "" : person["bio"]);
+        //Добавляем новый объект в список для возвращения
+        result->add(newPerson);
     }
+    //Для каждого фильма из списка...
+    for (auto movie : moviesList){
+        //Создаем новый экземпляр класса Movie
+        auto newMovie = new Movie(movie["title"], (int)movie["year"], (int)movie["id"]);
+        newMovie->setSynopsis(movie["synopsis"].is_null() ? "" : movie["synopsis"]);
+        newMovie->setBudget(movie["budgetUSD"].is_null() ? 0 : (int)movie["budgetUSD"]);
+        newMovie->setBoxOffice(movie["boxOfficeUSD"].is_null() ? 0 : (int)movie["boxOfficeUSD"]);
+        newMovie->setCountries(movie["countries"].is_null() ? "" : movie["countries"]);
+        newMovie->setRate(movie["rate"].is_null() ? 0.0f : (float)movie["rate"]);
+        //Находим режиссера среди недавно созданных персон
+        int director = (int)movie["director"];
+        for (int i = 0; i < result->getSize(); i++){
+            //Если идентификатор человека в списке совпал
+            //с идентификатором режиссера фильма
+            if(result->operator[](i)->getId() == director){
+                //Зачисляем этого человека в список режиссеров
+                result->operator[](i)->setDirector(true);
+                //Добавляем фильм в его список
+                result->operator[](i)->addMovie(newMovie);
+                //Устанавливаем у данного фильма режиссера
+                newMovie->setDirector(result->operator[](i));
+                //Выходим из цикла пораньше
+                break;
+            }
+        }
+        //Получаем список актеров фильма
+        json actors = movie["actors"];
+        //Получаем идентификатор каждого актера
+        for(int actor : actors){
+            //Ищем человека с таким идентификатором в списке
+            for (int i = 0; i < result->getSize(); i++){
+                //Если есть совпадение...
+                if(actor == result->operator[](i)->getId()){
+                    //Добавляем актера в фильм
+                    newMovie->addActor(result->operator[](i));
+                    //Добавляем этот фильм в список актера
+                    result->operator[](i)->addMovie(newMovie);
+                    break;
+                }
+            }
+        }
+    }
+    //Возвращаем результат
     return result;
 }
 
-json serializeJSON(List<Human> directors){
-        json j = json::array();
-
-    for(int i = 0; i < directors.getSize(); i++){
-        std::cout << i + 1 << ". " << directors[i]->getFullName() << std::endl;
+//Сериализация данных
+json serializeJSON(List<Human> * people){
+    //Создаем объект JSON
+    json database;
+    //Создаем JSON-массивы
+    json moviesList = json::array();
+    json peopleList = json::array();
+    //Для каждого человека из списка...
+    for(int i = 0; i < people->getSize(); i++){
+        //Вывод в консоль имени человека
+        std::cout << i + 1 << ". " << people->operator[](i)->getFullName() << std::endl;
+        //Если человек не режиссёр,
+        if(!people->operator[](i)->isDirector()){
+            //пока пропускаем его
+            continue;
+        }
+        //Создаем JSON-объект
         json director;
-        director["name"] = directors[i]->getName();
-        director["surname"] = directors[i]->getSurname();
-        director["bio"] = directors[i]->getBio();
-        director["movies"] = json::array();
-        auto movies = directors[i]->getMovies();
+        //Заполняем поля объекта
+        director["id"] = people->operator[](i)->getId();
+        director["name"] = people->operator[](i)->getName();
+        director["surname"] = people->operator[](i)->getSurname();
+        director["bio"] = people->operator[](i)->getBio();
+        //Создаем JSON-массив фильмов
+        json directorsMovies = json::array();
+        //Получаем список фильмов человека
+        auto movies = people->operator[](i)->getMovies();
+        //Для каждого фильма...
         for(int j = 0; j < movies.getSize(); j++){
+            //Выводим в консоль название фильма и год выпуска
             std::cout << "\t" << j + 1 << ". " << movies[j]->getTitle() << ", " << movies[j]->getYear() << std::endl;
+            //Создаем JSON-объект фильма
             json movie;
+            //Добавляем фильм в список текущего человека
+            directorsMovies.push_back(movies[j]->getId());
+            //Заполняем поля объекта
+            movie["director"] = people->operator[](i)->getId();
+            movie["id"] = movies[j]->getId();
             movie["title"] = movies[j]->getTitle();
             movie["year"] = movies[j]->getYear();
             movie["synopsis"] = movies[j]->getSynopsis();
@@ -49,13 +115,60 @@ json serializeJSON(List<Human> directors){
             movie["budgetUSD"] = movies[j]->getBudgetUSD();
             movie["boxOfficeUSD"] = movies[j]->getBoxOfficeUSD();
             movie["rate"] = movies[j]->getRate();
-//            auto actors = movies[j]->getActors();
-//            for(int k = 0; k < actors.getSize(); k++){
-//                std::cout << "\t\t" << k + 1 << ". " << actors[k]->getFullName() << std::endl;
-//            }
-            director["movies"].push_back(movie);
+            //Получаем список актеров фильма
+            auto actors = movies[j]->getActors();
+            //Так как для хранения актеров используется
+            //кольцевой односвязный список, я не могу узнать
+            //количество его элементов. Поэтому я извлекаю
+            //из него элементы пока не вылетит исключение
+            try{
+                while(true){
+                    //Извлекаем одного актера из списка
+                    auto newActor = actors.pop();
+                    //Добавляем идентификатор актера в фильм
+                    movie["actors"].push_back(newActor->getId());
+                    //Проверяем, добавляли ли мы уже этого человека?
+                    bool exist = false;
+                    //Проверяем всех людей из списка
+                    for(auto human : peopleList){
+                        //Если находим совпадение...
+                        if(newActor->getId() == human["id"]){
+                            //Добавляем в список этого человека идентификатор фильма
+                            human["movies"].push_back(movies[j]->getId());
+                            exist = true;
+                            break;
+                        }
+                    }
+                    //Если человек не существует
+                    if(!exist){
+                        //Создаем JSON-объект актера
+                        json actor;
+                        //Заполняем поля объекта
+                        actor["id"] = newActor->getId();
+                        actor["name"] = newActor->getName();
+                        actor["surname"] = newActor->getSurname();
+                        actor["bio"] = newActor->getBio();
+                        actor["movies"].push_back(movies[j]->getId());
+                        //Добавляем нового актера в список людей
+                        peopleList.push_back(actor);
+                    }
+                }
+            }
+            //Отлавливаем исключение
+            catch (bad_addr_exception e){
+            }
+            //Добавляем созданный фильма в список фильмов
+            moviesList.push_back(movie);
         }
-        j.push_back(director);
+        //Присваиваем режиссерам их фильмы
+        director["movies"] = directorsMovies;
+        //Добавляем режиссера в список людей
+        peopleList.push_back(director);
     }
-    return j;
+    //Добавляем оба списка в один JSON-объект
+    database["people"] = peopleList;
+    database["movies"] = moviesList;
+    //Возвращаем объект
+    return database;
 }
+

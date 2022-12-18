@@ -16,9 +16,10 @@ public:
 
 class Movie : public Searchable{
 public:
-    Movie(const std::string& title, int year){
+    Movie(const std::string& title, int year, int id){
         this->title = title;
         this->year = year;
+        this->id = id;
     }
 
     void setSynopsis(const std::string& value){
@@ -26,6 +27,10 @@ public:
     }
     std::string getSynopsis(){
         return this->synopsis;
+    }
+
+    int getId() const {
+        return this->id;
     }
 
     void setCountries(const std::string& value){
@@ -70,8 +75,8 @@ public:
         return 0.0f;
     }
 
-    void setDirector(Human * director){
-        this->director = director;
+    void setDirector(Human * person){
+        this->director = person;
     }
 
     Human * getDirector(){
@@ -82,11 +87,12 @@ public:
         this->actors.add(actor);
     }
 
-    List<Human> & getActors(){
+    CircularList<Human> & getActors(){
         return actors;
     }
 
 private:
+    int id;
     std::string title;
     std::string synopsis;
     int year;
@@ -95,14 +101,15 @@ private:
     int budgetUSD = 0;
     int boxOfficeUSD = 0;
     float rate = 0.0f;
-    List<Human> actors;
+    CircularList<Human> actors;
 };
 
 class Human : public Searchable{
 public:
-    Human(const std::string& name, const std::string& surname){
+    Human(const std::string& name, const std::string& surname, int id){
         this->name = name;
         this->surname = surname;
+        this->id = id;
     }
 
     std::string getName(){
@@ -117,6 +124,10 @@ public:
         return this->name + " " + this->surname;
     }
 
+    int getId() const{
+        return this->id;
+    }
+
     void setBio(const std::string& text){
         this->bio = text;
     }
@@ -126,7 +137,9 @@ public:
     }
 
     void addMovie(Movie * movie){
-        movie->setDirector(this);
+        for(int i = 0; i < this->movies.getSize(); i++){
+            if(movie == this->movies[i]) return;
+        }
         this->movies.add(movie);
     }
 
@@ -143,10 +156,20 @@ public:
         return 0.0f;
     }
 
+    bool isDirector() const{
+        return this->director;
+    }
+
+    void setDirector(bool state) {
+        this->director = state;
+    }
+
 private:
+    int id;
     std::string name;
     std::string surname;
     std::string bio;
+    bool director = false;
     List<Movie> movies;
 };
 

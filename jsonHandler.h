@@ -4,8 +4,9 @@
 #include <iostream>
 #include "json.hpp"
 using json = nlohmann::json;
-#include "List.h"
+#include "DataArrays.h"
 #include "DataTypes.h"
+
 
 //Десериализация JSON-строки
 List<Human> * deserializeJSON(const std::string& query){
@@ -170,5 +171,24 @@ json serializeJSON(List<Human> * people){
     database["movies"] = moviesList;
     //Возвращаем объект
     return database;
+}
+
+std::string loadFromFile(std::string path){
+    std::ifstream file(path);
+    std::string query;
+    while(!file.eof()){
+        auto * newLine = new char;
+        file.getline(newLine, 1024);
+        query += newLine;
+    }
+    file.close();
+    return query;
+}
+
+void writeToFile(std::string path, std::string content){
+    std::ofstream file(path);
+    file.clear();
+    file << content;
+    file.close();
 }
 

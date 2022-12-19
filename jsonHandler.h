@@ -1,6 +1,8 @@
 //
 // Created by Максим Лейхнер on 04.12.2022.
 //
+
+#include <fstream>
 #include <iostream>
 #include "json.hpp"
 using json = nlohmann::json;
@@ -22,6 +24,7 @@ List<Human> * deserializeJSON(const std::string& query){
         //Создаём новый экземпляр класса Human
         auto newPerson = new Human(person["name"], person["surname"], (int)person["id"]);
         newPerson->setBio(person["bio"].is_null() ? "" : person["bio"]);
+        newPerson->setPortrait(person["portrait"].is_null() ? "" : person["portrait"]);
         //Добавляем новый объект в список для возвращения
         result->add(newPerson);
     }
@@ -34,6 +37,7 @@ List<Human> * deserializeJSON(const std::string& query){
         newMovie->setBoxOffice(movie["boxOfficeUSD"].is_null() ? 0 : (int)movie["boxOfficeUSD"]);
         newMovie->setCountries(movie["countries"].is_null() ? "" : movie["countries"]);
         newMovie->setRate(movie["rate"].is_null() ? 0.0f : (float)movie["rate"]);
+        newMovie->setPoster(movie["poster"].is_null() ? "" : movie["poster"]);
         //Находим режиссера среди недавно созданных персон
         int director = (int)movie["director"];
         for (int i = 0; i < result->getSize(); i++){
@@ -94,6 +98,7 @@ json serializeJSON(List<Human> * people){
         director["name"] = people->operator[](i)->getName();
         director["surname"] = people->operator[](i)->getSurname();
         director["bio"] = people->operator[](i)->getBio();
+        director["portrait"] = people->operator[](i)->getPortraitPath();
         //Создаем JSON-массив фильмов
         json directorsMovies = json::array();
         //Получаем список фильмов человека
@@ -116,6 +121,7 @@ json serializeJSON(List<Human> * people){
             movie["budgetUSD"] = movies[j]->getBudgetUSD();
             movie["boxOfficeUSD"] = movies[j]->getBoxOfficeUSD();
             movie["rate"] = movies[j]->getRate();
+            movie["poster"] = movies[j]->getPosterPath();
             //Получаем список актеров фильма
             auto actors = movies[j]->getActors();
             //Так как для хранения актеров используется
@@ -149,6 +155,7 @@ json serializeJSON(List<Human> * people){
                         actor["name"] = newActor->getName();
                         actor["surname"] = newActor->getSurname();
                         actor["bio"] = newActor->getBio();
+                        actor["portrait"] = newActor->getPortraitPath();
                         actor["movies"].push_back(movies[j]->getId());
                         //Добавляем нового актера в список людей
                         peopleList.push_back(actor);
@@ -173,22 +180,35 @@ json serializeJSON(List<Human> * people){
     return database;
 }
 
+//Чтение файла
 std::string loadFromFile(std::string path){
+    //Открываем входной поток
     std::ifstream file(path);
+    //Создаем строковую переменную
     std::string query;
+    //До конца файла считываем
+    //строки и добавляем их
+    //в query
     while(!file.eof()){
         auto * newLine = new char;
         file.getline(newLine, 1024);
         query += newLine;
     }
+    //Закрываем поток
     file.close();
+    //Возвращаем результат
     return query;
 }
 
+//Запись в файл
 void writeToFile(std::string path, std::string content){
+    //Открываем выходной поток
     std::ofstream file(path);
+    //Очищаем файл
     file.clear();
+    //Передаем контент в поток
     file << content;
+    //Закрываем поток
     file.close();
 }
 

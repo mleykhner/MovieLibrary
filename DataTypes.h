@@ -6,6 +6,9 @@
 #define MOVIELIBRARY_DATATYPES_H
 
 #include <string>
+#include "SFML/Graphics.hpp"
+
+#define NO_IMAGE "/Users/mleykhner/Documents/Курсовая 3 сем/MovieLibrary/resources/images/no_image.png"
 
 class Human;
 
@@ -91,6 +94,22 @@ public:
         return actors;
     }
 
+    sf::Texture * getPoster(){
+        return &this->poster;
+    }
+
+    std::string getPosterPath(){
+        return this->posterPath;
+    }
+
+    bool setPoster(std::string path){
+        if(path.empty()){
+            return this->poster.loadFromFile(NO_IMAGE);
+        }
+        this->posterPath = path;
+        return this->poster.loadFromFile(path);
+    }
+
 private:
     int id;
     std::string title;
@@ -102,6 +121,8 @@ private:
     int boxOfficeUSD = 0;
     float rate = 0.0f;
     CircularList<Human> actors;
+    sf::Texture poster;
+    std::string posterPath;
 };
 
 class Human : public Searchable{
@@ -164,6 +185,22 @@ public:
         this->director = state;
     }
 
+    sf::Texture * getPortrait(){
+        return &this->portrait;
+    }
+
+    std::string getPortraitPath(){
+        return this->portraitPath;
+    }
+
+    bool setPortrait(std::string path){
+        if(path.empty()){
+            return this->portrait.loadFromFile(NO_IMAGE);
+        }
+        this->portraitPath = path;
+        return this->portrait.loadFromFile(path);
+    }
+
 private:
     int id;
     std::string name;
@@ -171,6 +208,8 @@ private:
     std::string bio;
     bool director = false;
     List<Movie> movies;
+    sf::Texture portrait;
+    std::string portraitPath;
 };
 
 #endif //MOVIELIBRARY_DATATYPES_H

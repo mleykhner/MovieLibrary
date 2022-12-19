@@ -13,4 +13,10 @@ class bad_addr_exception : virtual public std::exception{
     }
 };
 
+class res_file_not_loaded : virtual public std::exception{
+    const char * what() const noexcept override {
+        return "Resource file is not available";
+    }
+};
+
 #endif //MOVIELIBRARY_MOVIESEXCEPTION_H

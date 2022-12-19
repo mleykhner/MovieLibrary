@@ -73,6 +73,14 @@ public:
     int getSize(){
         return this->size;
     }
+
+    void clear(){
+        int toDelete = this->size;
+        for (int i = 0; i < toDelete; i++){
+            remove(0);
+        }
+    }
+
     void insert(int index, T * element) {
         if (index >= this->size || index < 0) throw bad_addr_exception();
         auto newElement = new Element(element);
